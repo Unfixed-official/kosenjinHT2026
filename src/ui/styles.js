@@ -3,36 +3,38 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f1115',
+    backgroundColor: '#f4f8ff',
     padding: 16
   },
   section: {
-    backgroundColor: '#181b22',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2a2f3b'
+    borderColor: '#d4def5'
   },
   title: {
-    color: '#f1f5f9',
+    color: '#1f2a44',
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 10
   },
   text: {
-    color: '#d1d5db'
+    color: '#334155'
   },
   input: {
-    backgroundColor: '#232938',
-    color: '#f1f5f9',
+    backgroundColor: '#eef4ff',
+    color: '#1f2a44',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 8
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#c7d2fe'
   },
   button: {
-    backgroundColor: '#6ea8fe',
+    backgroundColor: '#7dd3fc',
     borderRadius: 10,
     paddingVertical: 11,
     paddingHorizontal: 14,
@@ -40,22 +42,24 @@ export const styles = StyleSheet.create({
     marginTop: 6
   },
   buttonSecondary: {
-    backgroundColor: '#2a2f3b'
+    backgroundColor: '#c7d2fe'
   },
   buttonText: {
-    color: '#0f1115',
+    color: '#1f2a44',
     fontWeight: '700'
   },
   muted: {
-    color: '#94a3b8',
+    color: '#64748b',
     marginTop: 6
   },
   chip: {
-    backgroundColor: '#232938',
+    backgroundColor: '#eef2ff',
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginRight: 8,
-    marginBottom: 8
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#c7d2fe'
   }
 });

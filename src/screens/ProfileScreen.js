@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { logout } from '../firebase/auth';
-import { getUserProfile, upsertUserProfile } from '../firebase/firestore';
+import { getUserProfile, upsertUserProfile } from '../data/store';
 import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
+  const { user, resetUser } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [roles, setRoles] = useState('');
   const [achievements, setAchievements] = useState('');
@@ -67,8 +66,8 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.button} onPress={onSave}>
           <Text style={styles.buttonText}>保存</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={logout}>
-          <Text style={[styles.buttonText, { color: '#f1f5f9' }]}>ログアウト</Text>
+        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={resetUser}>
+          <Text style={[styles.buttonText, { color: '#f1f5f9' }]}>ユーザー再生成</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

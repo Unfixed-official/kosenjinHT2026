@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { applyToProject } from '../firebase/firestore';
+import { applyToProject } from '../data/store';
 import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
 

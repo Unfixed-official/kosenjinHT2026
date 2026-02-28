@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { acceptApplication, listMyApplications, listOwnedPendingApplications } from '../firebase/firestore';
+import { acceptApplication, listMyApplications, listOwnedPendingApplications } from '../data/store';
 import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { sendMessage, subscribeChannels, subscribeMessages } from '../firebase/firestore';
+import { sendMessage, subscribeChannels, subscribeMessages } from '../data/store';
 import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
 
