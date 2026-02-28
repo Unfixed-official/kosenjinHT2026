@@ -1,4 +1,5 @@
 import { KOSEN_MAP } from './kosenLocations';
+import { generateAIResponse } from './ai';
 
 const state = {
   users: {},
@@ -84,7 +85,14 @@ export async function createProject(ownerId, payload) {
     isPrivate: false,
     position: 1
   });
-  state.messages[projectId][generalId] = [];
+  state.messages[projectId][generalId] = [
+    {
+      id: makeId('msg'),
+      senderId: 'AI_PM',
+      text: 'プロジェクトが作成されました！本プロジェクトの進行は、私「AIプロジェクトマネージャー」がサポートします。\nメンバーが揃うまで、もう少しお待ち下さい。',
+      createdAt: Date.now()
+    }
+  ];
   emitChannels(projectId);
 
   return projectId;
@@ -124,6 +132,18 @@ export async function acceptApplication(projectId, applicantId, reviewerId, role
     shareBps: 1500,
     joinedAt: Date.now()
   };
+
+  const general = state.channels[projectId].find(c => c.name === 'general');
+  if (general) {
+    if (!state.messages[projectId][general.id]) state.messages[projectId][general.id] = [];
+    state.messages[projectId][general.id].push({
+      id: makeId('msg'),
+      senderId: 'AI_PM',
+      text: `新しいメンバーがマッチングしました！🎉\n私「AIプロジェクトマネージャー」が進行を担当します。\nまずは皆さん、お互いに自己紹介と、得意なスキル・担当したいタスクについて話し合いましょう！`,
+      createdAt: Date.now()
+    });
+    emitMessages(projectId, general.id);
+  }
 }
 
 export function subscribeChannels(projectId, callback) {
@@ -165,6 +185,33 @@ export async function sendMessage(projectId, channelId, uid, text) {
     createdAt: Date.now()
   });
   emitMessages(projectId, channelId);
+
+  // Invoke real AI PM if a user messages
+  if (uid !== 'AI_PM') {
+    // Generate async so we don't block the UI
+    (async () => {
+      try {
+        const history = state.messages[projectId][channelId].slice(-10); // get last 10 messages for context
+        const project = state.projects.find(p => p.id === projectId);
+        if (!project) return;
+
+        // Pass the ownerId (who created the project and presumably set the API key) to get the AI response
+        const aiResponseText = await generateAIResponse(project.ownerId, history);
+
+        if (aiResponseText) {
+          state.messages[projectId][channelId].push({
+            id: makeId('msg'),
+            senderId: 'AI_PM',
+            text: aiResponseText,
+            createdAt: Date.now()
+          });
+          emitMessages(projectId, channelId);
+        }
+      } catch (err) {
+        console.error('AI Integration Error:', err);
+      }
+    })();
+  }
 }
 
 export async function listMyApplications(uid) {

@@ -1,21 +1,17 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { createProject } from '../data/store';
-import { getKosenById, KOSEN_LOCATIONS } from '../data/kosenLocations';
+import { Alert, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { createProject, getUserProfile } from '../data/store';
 import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
-import MapPanel from '../ui/MapPanel';
 
 const ROLE_OPTIONS = ['フロントエンド', 'バックエンド', 'デザイナー', 'その他'];
 
-export default function CreateProjectScreen() {
+export default function CreateProjectScreen({ onProjectCreated }) {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [otherRoleText, setOtherRoleText] = useState('');
-  const [selectedKosenId, setSelectedKosenId] = useState(null);
-  const [step, setStep] = useState('form');
 
   const hasOther = selectedRoles.includes('その他');
 
@@ -46,70 +42,53 @@ export default function CreateProjectScreen() {
     return true;
   };
 
-  const moveToMapStep = () => {
-    if (!validateBasic()) return;
-    setStep('map');
-  };
-
   const onCreate = async () => {
-    if (!validateBasic()) return;
-    if (!selectedKosenId) {
-      Alert.alert('入力不足', '地図上で高専を選択してください。');
-      return;
+    try {
+      if (!validateBasic()) return;
+
+      const profile = await getUserProfile(user.uid);
+      if (!profile || !profile.kosenId) {
+        if (Platform.OS === 'web') {
+          window.alert('プロジェクトを作成するには、プロフィール画面で所属高専を設定してください。');
+        } else {
+          Alert.alert('プロフィールの設定が必要です', 'プロジェクトを作成するには、プロフィール画面で所属高専を設定してください。');
+        }
+        return;
+      }
+
+      const normalizedRoles = selectedRoles
+        .filter((r) => r !== 'その他')
+        .concat(hasOther ? [otherRoleText.trim()] : []);
+
+      const projectId = await createProject(user.uid, {
+        title,
+        summary,
+        requiredRoles: normalizedRoles,
+        kosenId: profile.kosenId
+      });
+
+      setTitle('');
+      setSummary('');
+      setSelectedRoles([]);
+      setOtherRoleText('');
+
+      if (Platform.OS === 'web') {
+        window.alert('プロジェクトを作成しました！');
+        onProjectCreated?.();
+      } else {
+        Alert.alert('作成完了', 'プロジェクトを作成しました！', [
+          { text: 'OK', onPress: () => onProjectCreated?.() }
+        ]);
+      }
+    } catch (e) {
+      console.error(e);
+      if (Platform.OS === 'web') {
+        window.alert('エラー: ' + e.message);
+      } else {
+        Alert.alert('エラー', e.message);
+      }
     }
-
-    const normalizedRoles = selectedRoles
-      .filter((r) => r !== 'その他')
-      .concat(hasOther ? [otherRoleText.trim()] : []);
-
-    const projectId = await createProject(user.uid, {
-      title,
-      summary,
-      requiredRoles: normalizedRoles,
-      kosenId: selectedKosenId
-    });
-    setTitle('');
-    setSummary('');
-    setSelectedRoles([]);
-    setOtherRoleText('');
-    setSelectedKosenId(null);
-    setStep('form');
-    Alert.alert('作成完了', `プロジェクトを作成しました: ${projectId}`);
   };
-
-  if (step === 'map') {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#0f1115', padding: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <Text style={[styles.title, { marginBottom: 0 }]}>高専を指定</Text>
-          <Text style={styles.muted}>{selectedKosenId ? '選択済み' : '未選択'}</Text>
-        </View>
-
-        <MapPanel
-          fullScreen
-          selectedPinId={selectedKosenId}
-          onPinPress={(pin) => setSelectedKosenId(pin.id)}
-          pins={KOSEN_LOCATIONS.map((kosen) => ({
-            id: kosen.id,
-            x: kosen.x,
-            y: kosen.y,
-            title: kosen.name
-          }))}
-        />
-
-        <Text style={[styles.muted, { marginTop: 8 }]}>選択中: {getKosenById(selectedKosenId)?.name || '-'}</Text>
-
-        <View style={{ flexDirection: 'row', marginTop: 10 }}>
-          <TouchableOpacity style={[styles.button, styles.buttonSecondary, { flex: 1, marginRight: 8 }]} onPress={() => setStep('form')}>
-            <Text style={[styles.buttonText, { color: '#1f2a44' }]}>基本情報へ戻る</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, { flex: 1, marginTop: 6 }]} onPress={onCreate}>
-            <Text style={styles.buttonText}>この場所で作成</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <ScrollView style={styles.container}>
@@ -160,8 +139,8 @@ export default function CreateProjectScreen() {
           placeholderTextColor="#94a3b8"
         />
 
-        <TouchableOpacity style={styles.button} onPress={moveToMapStep}>
-          <Text style={styles.buttonText}>次へ（活動場所を指定）</Text>
+        <TouchableOpacity style={styles.button} onPress={onCreate}>
+          <Text style={styles.buttonText}>作成</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

@@ -62,12 +62,31 @@ export default function WorkspaceScreen({ route }) {
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={{ marginBottom: 8 }}>
-              <Text style={[styles.muted, { marginTop: 0 }]}>{item.senderId}</Text>
-              <Text style={styles.text}>{item.text}</Text>
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const isAI = item.senderId === 'AI_PM';
+            return (
+              <View style={{
+                marginBottom: 12,
+                backgroundColor: isAI ? '#f0f5ff' : 'transparent',
+                padding: isAI ? 12 : 0,
+                borderRadius: isAI ? 12 : 0,
+                borderWidth: isAI ? 1 : 0,
+                borderColor: '#c7d2fe'
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  {isAI ? (
+                    <Text style={{ fontSize: 16, marginRight: 6 }}>🤖</Text>
+                  ) : (
+                    <Text style={{ fontSize: 16, marginRight: 6 }}>👤</Text>
+                  )}
+                  <Text style={[styles.muted, { marginTop: 0, fontWeight: isAI ? '700' : '400', color: isAI ? '#4f46e5' : '#64748b' }]}>
+                    {isAI ? 'AI プロジェクトマネージャー' : item.senderId}
+                  </Text>
+                </View>
+                <Text style={[styles.text, { paddingLeft: 22, lineHeight: 20 }]}>{item.text}</Text>
+              </View>
+            );
+          }}
         />
       </View>
 

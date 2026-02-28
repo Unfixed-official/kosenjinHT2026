@@ -4,6 +4,7 @@ import ProjectsScreen from './ProjectsScreen';
 import CreateProjectScreen from './CreateProjectScreen';
 import ApplicationsScreen from './ApplicationsScreen';
 import ProfileScreen from './ProfileScreen';
+import { QuintetLogoWide, QuintetLogoSquare } from '../ui/QuintetLogo';
 
 const sections = [
   { key: 'Projects', label: 'Projects', icon: '📁' },
@@ -59,7 +60,7 @@ export default function MainShellScreen({ navigation }) {
   const CurrentSection = useMemo(() => {
     switch (activeSection) {
       case 'Create':
-        return <CreateProjectScreen />;
+        return <CreateProjectScreen onProjectCreated={() => setActiveSection('Projects')} />;
       case 'Applications':
         return <ApplicationsScreen />;
       case 'Profile':
@@ -92,8 +93,8 @@ export default function MainShellScreen({ navigation }) {
             paddingHorizontal: 14
           }}
         >
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: text, fontSize: 24 }}>Quintet Project</Text>
+          <View style={{ flex: 1, paddingLeft: 8 }}>
+            <QuintetLogoWide width={180} />
           </View>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <Text style={{ color: text, fontSize: 22 }}>{activeSection}</Text>
@@ -114,6 +115,9 @@ export default function MainShellScreen({ navigation }) {
               paddingHorizontal: 8
             }}
           >
+            <View style={{ height: 42, marginBottom: 16, alignItems: 'center', justifyContent: 'center' }}>
+              <QuintetLogoSquare size={32} color="#7dd3fc" />
+            </View>
             {sections.map((section) => {
               const active = activeSection === section.key;
               return (
