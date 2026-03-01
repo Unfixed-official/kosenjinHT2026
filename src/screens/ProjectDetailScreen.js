@@ -6,7 +6,7 @@ import { styles } from '../ui/styles';
 import { Feather } from '@expo/vector-icons';
 import { ROLE_OPTIONS } from './CreateProjectScreen';
 
-export default function ProjectDetailScreen({ route, navigation }) {
+export default function ProjectDetailScreen({ route, setActiveSection }) {
   const { project } = route.params;
   const { user } = useAuth();
 
@@ -36,8 +36,8 @@ export default function ProjectDetailScreen({ route, navigation }) {
 
   const onApply = async () => {
     await applyToProject(project.id, user.uid, role || 'general', message || '参加希望です。');
-    Alert.alert('申請完了', 'オーナーの承認待ちです。', [
-      { text: 'OK', onPress: () => navigation.goBack() }
+    Alert.alert('申請完了', 'メンバーに追加されました。', [
+      { text: 'OK', onPress: () => setActiveSection({ name: 'Workspace', params: { projectId: project.id } }) }
     ]);
   };
 
@@ -74,7 +74,7 @@ export default function ProjectDetailScreen({ route, navigation }) {
           } else {
             Alert.alert('削除完了', 'プロジェクトを削除しました。');
           }
-          navigation.goBack();
+          setActiveSection({ name: 'Projects' });
         }
       }
     ]);
@@ -199,7 +199,7 @@ export default function ProjectDetailScreen({ route, navigation }) {
               </Text>
               <TouchableOpacity
                 style={[styles.button, { width: '100%', flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }]}
-                onPress={() => navigation.navigate('Workspace', { projectId: project.id })}
+                onPress={() => setActiveSection({ name: 'Workspace', params: { projectId: project.id } })}
               >
                 <Feather name="message-square" size={20} color="#1f2a44" style={{ marginRight: 8 }} />
                 <Text style={styles.buttonText}>ワークスペースを開く</Text>

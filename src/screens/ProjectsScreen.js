@@ -7,7 +7,7 @@ import { styles } from '../ui/styles';
 const ROLE_FILTER_OPTIONS = ['フロントエンド', 'バックエンド', 'デザイナー', 'その他'];
 const BASE_ROLES = ['フロントエンド', 'バックエンド', 'デザイナー'];
 
-export default function ProjectsScreen({ navigation }) {
+export default function ProjectsScreen({ setActiveSection }) {
   const { user } = useAuth();
   const [keyword, setKeyword] = useState('');
   const [items, setItems] = useState([]);
@@ -81,17 +81,33 @@ export default function ProjectsScreen({ navigation }) {
             style={styles.section}
             onPress={() => {
               if (project.memberIds && project.memberIds.includes(user?.uid)) {
-                navigation.navigate('Workspace', { projectId: project.id });
+                setActiveSection({ name: 'Workspace', params: { projectId: project.id } });
               } else {
-                navigation.navigate('ProjectDetail', { project });
+                setActiveSection({ name: 'ProjectDetail', params: { project } });
               }
             }}
           >
-            <Text style={[styles.text, { fontWeight: '700', marginBottom: 4 }]}>{project.title}</Text>
-            <Text style={styles.text}>{project.summary}</Text>
-            <Text style={styles.muted}>kosen: {project.kosenName || '-'}</Text>
-            <Text style={styles.muted}>roles: {(project.requiredRoles || []).join(', ') || '-'}</Text>
-            <Text style={styles.muted}>status: {project.status}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={[styles.text, { fontWeight: '700', marginBottom: 4 }]}>{project.title}</Text>
+                <Text style={styles.text}>{project.summary}</Text>
+                <Text style={styles.muted}>kosen: {project.kosenName || '-'}</Text>
+                <Text style={styles.muted}>roles: {(project.requiredRoles || []).join(', ') || '-'}</Text>
+                <Text style={styles.muted}>status: {project.status}</Text>
+              </View>
+              {project.memberIds && project.memberIds.includes(user?.uid) && (
+                <TouchableOpacity
+                  style={{ padding: 12, backgroundColor: '#f1f5f9', borderRadius: 8 }}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setActiveSection({ name: 'ProjectDetail', params: { project } });
+                  }}
+                >
+                  <Text style={{ color: '#475569', fontSize: 12, fontWeight: '700', marginBottom: 4 }}>詳細</Text>
+                  <Feather name="info" size={20} color="#475569" style={{ alignSelf: 'center' }} />
+                </TouchableOpacity>
+              )}
+            </View>
           </TouchableOpacity>
         ))}
         {filteredItems.length === 0 ? (

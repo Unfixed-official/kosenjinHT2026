@@ -89,9 +89,28 @@ export async function applyToProject(projectId, uid, role, message) {
     applicantId: uid,
     applyRole: role,
     message,
-    status: 'pending',
+    status: 'accepted',
     createdAt: Date.now()
   });
+
+  // 即時メンバー登録
+  await updateDoc(doc(db, 'projects', projectId), {
+    memberIds: arrayUnion(uid)
+  });
+
+  // AIメッセージ
+  const chQ = query(collection(db, 'projects', projectId, 'channels'), where('name', '==', 'general'));
+  const chSnap = await getDocs(chQ);
+  if (!chSnap.empty) {
+    const channelId = chSnap.docs[0].id;
+    const msgRef = doc(collection(db, 'projects', projectId, 'channels', channelId, 'messages'));
+    await setDoc(msgRef, {
+      id: msgRef.id,
+      senderId: 'AI_PM',
+      text: `新しいメンバーがマッチングしました！🎉\n私「AIプロジェクトマネージャー」が進行を担当します。\nまずは皆さん、お互いに自己紹介と、得意なスキル・担当したいタスクについて話し合いましょう！`,
+      createdAt: Date.now()
+    });
+  }
 }
 
 export async function acceptApplication(projectId, applicantId, reviewerId, role) {

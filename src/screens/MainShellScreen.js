@@ -23,8 +23,8 @@ const text = '#f1f5f9';
 const muted = '#94a3b8';
 const activeBg = '#232938';
 
-export default function MainShellScreen({ navigation }) {
-  const [activeSection, setActiveSection] = useState('Dashboard');
+export default function MainShellScreen() {
+  const [activeSection, setActiveSection] = useState({ name: 'Dashboard', params: null });
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const collapseTimerRef = useRef(null);
   const sidebarWidth = useRef(new Animated.Value(74)).current;
@@ -61,20 +61,24 @@ export default function MainShellScreen({ navigation }) {
   }, []);
 
   const CurrentSection = useMemo(() => {
-    switch (activeSection) {
+    switch (activeSection.name) {
       case 'Dashboard':
-        return <DashboardScreen setActiveSection={setActiveSection} navigation={navigation} />;
+        return <DashboardScreen setActiveSection={setActiveSection} />;
       case 'Create':
-        return <CreateProjectScreen onProjectCreated={() => setActiveSection('Dashboard')} />;
+        return <CreateProjectScreen onProjectCreated={() => setActiveSection({ name: 'Dashboard' })} />;
       case 'Applications':
-        return <ApplicationsScreen />;
+        return <ApplicationsScreen setActiveSection={setActiveSection} />;
       case 'Profile':
         return <ProfileScreen />;
+      case 'ProjectDetail':
+        return <ProjectDetailScreen route={{ params: activeSection.params }} setActiveSection={setActiveSection} />;
+      case 'Workspace':
+        return <WorkspaceScreen route={{ params: activeSection.params }} setActiveSection={setActiveSection} />;
       case 'Projects':
       default:
-        return <ProjectsScreen navigation={navigation} />;
+        return <ProjectsScreen setActiveSection={setActiveSection} />;
     }
-  }, [activeSection, navigation]);
+  }, [activeSection]);
 
   return (
     <View style={{ flex: 1, backgroundColor: baseBg }}>
@@ -102,7 +106,15 @@ export default function MainShellScreen({ navigation }) {
             <QuintetLogoWide width={180} />
           </View>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ color: text, fontSize: 22 }}>{activeSection}</Text>
+            <Text style={{ color: text, fontSize: 22 }}>
+              {activeSection.name === 'Dashboard' ? 'ホーム' :
+                activeSection.name === 'Projects' ? '探す' :
+                  activeSection.name === 'Create' ? '作成' :
+                    activeSection.name === 'ProjectDetail' ? 'プロジェクト詳細' :
+                      activeSection.name === 'Workspace' ? 'ワークスペース' :
+                        activeSection.name === 'Applications' ? '申請' :
+                          activeSection.name === 'Profile' ? 'プロフィール' : activeSection.name}
+            </Text>
           </View>
           <View style={{ flex: 1 }} />
         </View>
@@ -124,11 +136,11 @@ export default function MainShellScreen({ navigation }) {
               <QuintetLogoSquare size={32} color="#f1f5f9" />
             </View>
             {sections.map((section) => {
-              const active = activeSection === section.key;
+              const active = activeSection.name === section.key;
               return (
                 <Pressable
                   key={section.key}
-                  onPress={() => setActiveSection(section.key)}
+                  onPress={() => setActiveSection({ name: section.key })}
                   onHoverIn={expandSidebar}
                   style={{
                     height: 42,

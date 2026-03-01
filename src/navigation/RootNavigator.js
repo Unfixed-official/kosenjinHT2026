@@ -22,8 +22,6 @@ export default function RootNavigator() {
       ) : (
         <>
           <Stack.Screen name="Main" component={MainShellScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ title: 'Project' }} />
-          <Stack.Screen name="Workspace" component={WorkspaceScreen} options={{ title: 'Workspace' }} />
         </>
       )}
     </Stack.Navigator>
