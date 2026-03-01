@@ -5,6 +5,8 @@ import CreateProjectScreen from './CreateProjectScreen';
 import ApplicationsScreen from './ApplicationsScreen';
 import ProfileScreen from './ProfileScreen';
 import DashboardScreen from './DashboardScreen';
+import ProjectDetailScreen from './ProjectDetailScreen';
+import WorkspaceScreen from './WorkspaceScreen';
 import { QuintetLogoWide, QuintetLogoSquare } from '../ui/QuintetLogo';
 import { Feather } from '@expo/vector-icons';
 
