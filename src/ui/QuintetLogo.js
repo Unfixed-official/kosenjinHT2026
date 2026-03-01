@@ -1,4 +1,5 @@
 import React from 'react';
+import { Image } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
 const rawPaths = [
@@ -30,12 +31,12 @@ export function QuintetLogoWide({ width = 200, height, color = "#f1f5f9" }) {
   );
 }
 
-export function QuintetLogoSquare({ size = 40, color = "#f1f5f9" }) {
-  // 正方形向け。最初の "Q" の部分 (大体幅112) を切り抜いて表示します。
-  const paths = rawPaths.map((el) => React.cloneElement(el, { fill: color }));
+export function QuintetLogoSquare({ size = 40 }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 112 86.4">
-      {paths}
-    </Svg>
+    <Image
+      source={require('../image/quintetkun.png')}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
   );
 }

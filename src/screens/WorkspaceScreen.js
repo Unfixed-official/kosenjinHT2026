@@ -3,6 +3,7 @@ import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { sendMessage, subscribeChannels, subscribeMessages } from '../data/store';
 import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
+import { Feather } from '@expo/vector-icons';
 
 export default function WorkspaceScreen({ route }) {
   const { projectId } = route.params;
@@ -75,9 +76,9 @@ export default function WorkspaceScreen({ route }) {
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                   {isAI ? (
-                    <Text style={{ fontSize: 16, marginRight: 6 }}>🤖</Text>
+                    <Feather name="cpu" size={16} color="#4f46e5" style={{ marginRight: 6 }} />
                   ) : (
-                    <Text style={{ fontSize: 16, marginRight: 6 }}>👤</Text>
+                    <Feather name="user" size={16} color="#64748b" style={{ marginRight: 6 }} />
                   )}
                   <Text style={[styles.muted, { marginTop: 0, fontWeight: isAI ? '700' : '400', color: isAI ? '#4f46e5' : '#64748b' }]}>
                     {isAI ? 'AI プロジェクトマネージャー' : item.senderId}

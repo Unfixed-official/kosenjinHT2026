@@ -6,7 +6,7 @@ import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
 
 export default function ProfileScreen() {
-  const { user, resetUser } = useAuth();
+  const { user, logOut } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [roles, setRoles] = useState('');
   const [achievements, setAchievements] = useState('');
@@ -94,8 +94,8 @@ export default function ProfileScreen() {
         <TouchableOpacity style={[styles.button, { marginTop: 12 }]} onPress={onSave}>
           <Text style={styles.buttonText}>保存</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={resetUser}>
-          <Text style={[styles.buttonText, { color: '#f1f5f9' }]}>ユーザー再生成</Text>
+        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={logOut}>
+          <Text style={[styles.buttonText, { color: '#f1f5f9' }]}>ログアウト</Text>
         </TouchableOpacity>
       </View>
 

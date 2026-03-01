@@ -4,13 +4,16 @@ import ProjectsScreen from './ProjectsScreen';
 import CreateProjectScreen from './CreateProjectScreen';
 import ApplicationsScreen from './ApplicationsScreen';
 import ProfileScreen from './ProfileScreen';
+import DashboardScreen from './DashboardScreen';
 import { QuintetLogoWide, QuintetLogoSquare } from '../ui/QuintetLogo';
+import { Feather } from '@expo/vector-icons';
 
 const sections = [
-  { key: 'Projects', label: 'Projects', icon: '📁' },
-  { key: 'Create', label: 'Create', icon: '➕' },
-  { key: 'Applications', label: 'Applications', icon: '📥' },
-  { key: 'Profile', label: 'Profile', icon: '👤' }
+  { key: 'Dashboard', label: 'Dashboard', icon: 'home' },
+  { key: 'Projects', label: 'Projects', icon: 'folder' },
+  { key: 'Create', label: 'Create', icon: 'plus-square' },
+  { key: 'Applications', label: 'Applications', icon: 'inbox' },
+  { key: 'Profile', label: 'Profile', icon: 'user' }
 ];
 
 const baseBg = '#0f1115';
@@ -21,7 +24,7 @@ const muted = '#94a3b8';
 const activeBg = '#232938';
 
 export default function MainShellScreen({ navigation }) {
-  const [activeSection, setActiveSection] = useState('Projects');
+  const [activeSection, setActiveSection] = useState('Dashboard');
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const collapseTimerRef = useRef(null);
   const sidebarWidth = useRef(new Animated.Value(74)).current;
@@ -59,6 +62,8 @@ export default function MainShellScreen({ navigation }) {
 
   const CurrentSection = useMemo(() => {
     switch (activeSection) {
+      case 'Dashboard':
+        return <DashboardScreen setActiveSection={setActiveSection} navigation={navigation} />;
       case 'Create':
         return <CreateProjectScreen onProjectCreated={() => setActiveSection('Projects')} />;
       case 'Applications':
@@ -135,7 +140,7 @@ export default function MainShellScreen({ navigation }) {
                     backgroundColor: active ? activeBg : 'transparent'
                   }}
                 >
-                  <Text style={{ fontSize: 18 }}>{section.icon}</Text>
+                  <Feather name={section.icon} size={22} color={active ? text : muted} />
                   {sidebarExpanded ? (
                     <Text style={{ color: active ? text : muted, marginLeft: 10, fontWeight: active ? '700' : '500' }}>
                       {section.label}

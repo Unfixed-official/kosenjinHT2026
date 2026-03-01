@@ -16,6 +16,9 @@
     },
     "assetBundlePatterns": [
       "**/*"
+    ],
+    "plugins": [
+      "expo-web-browser"
     ]
   }
 }

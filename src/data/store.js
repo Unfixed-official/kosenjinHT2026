@@ -246,3 +246,14 @@ export async function listOwnedPendingApplications(ownerId) {
   }
   return pending;
 }
+
+export async function listMyProjects(uid) {
+  const results = [];
+  for (const project of state.projects) {
+    const member = state.members[project.id]?.[uid];
+    if (member && (member.role === 'owner' || member.memberStatus === 'active' || member.memberStatus === 'provisional')) {
+      results.push(project);
+    }
+  }
+  return results;
+}
