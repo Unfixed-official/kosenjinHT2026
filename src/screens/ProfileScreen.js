@@ -1,17 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
 import { getUserProfile, upsertUserProfile } from '../data/store';
 import { KOSEN_LOCATIONS, getKosenById } from '../data/kosenLocations';
 import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
+import { Feather } from '@expo/vector-icons';
+
+const AVAILABLE_SKILLS = [
+  "フロントエンド開発（Web / モバイル）",
+  "バックエンド開発（API / DB設計）",
+  "インフラ・クラウド構築",
+  "AI・機械学習",
+  "ハードウェア・IoT開発",
+  "UIデザイン",
+  "UX設計",
+  "3Dモデリング",
+  "動画制作・モーショングラフィック"
+];
 
 export default function ProfileScreen() {
   const { user, logOut } = useAuth();
   const [displayName, setDisplayName] = useState('');
-  const [roles, setRoles] = useState('');
-  const [achievements, setAchievements] = useState('');
-  const [geminiKey, setGeminiKey] = useState('');
   const [kosenId, setKosenId] = useState(null);
+  const [skills, setSkills] = useState([]);
+  const [achievements, setAchievements] = useState('');
+  const [bio, setBio] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
   const [pickerVisible, setPickerVisible] = useState(false);
 
   useEffect(() => {
@@ -19,55 +33,57 @@ export default function ProfileScreen() {
     getUserProfile(user.uid).then((profile) => {
       if (!profile) return;
       setDisplayName(profile.displayName || '');
-      setRoles((profile.roles || []).join(', '));
-      setAchievements((profile.achievements || []).join(', '));
-      setGeminiKey(profile.geminiKey || '');
       setKosenId(profile.kosenId || null);
+      setSkills(profile.skills || []);
+      setAchievements(profile.achievements || '');
+      setBio(profile.bio || '');
+      setGeminiKey(profile.geminiKey || '');
     });
   }, [user]);
 
   const onSave = async () => {
     if (!user) return;
     await upsertUserProfile(user.uid, {
-      displayName: displayName || user.displayName || 'Unknown Creator',
+      displayName: displayName || user.displayName || '名無し',
       kosenId: kosenId,
+      skills: skills,
+      achievements: achievements,
+      bio: bio,
       geminiKey: geminiKey.trim(),
-      roles: roles
-        .split(',')
-        .map((x) => x.trim())
-        .filter(Boolean),
-      achievements: achievements
-        .split(',')
-        .map((x) => x.trim())
-        .filter(Boolean)
     });
     Alert.alert('保存完了', 'プロフィールを更新しました。');
+  };
+
+  const toggleSkill = (skill) => {
+    if (skills.includes(skill)) {
+      setSkills(skills.filter(s => s !== skill));
+    } else {
+      setSkills([...skills, skill]);
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.title}>プロフィール</Text>
-        <Text style={styles.text}>UID: {user?.uid}</Text>
+
+        {/* ユーザーアイコン (表示のみ) */}
+        <View style={{ alignItems: 'center', marginBottom: 20 }}>
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#eef4ff' }} />
+          ) : (
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#eef4ff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#c7d2fe' }}>
+              <Feather name="user" size={40} color="#64748b" />
+            </View>
+          )}
+        </View>
+
+        <Text style={[styles.text, { marginBottom: 4 }]}>ニックネーム</Text>
         <TextInput
           style={styles.input}
           value={displayName}
           onChangeText={setDisplayName}
-          placeholder="表示名"
-          placeholderTextColor="#94a3b8"
-        />
-        <TextInput
-          style={styles.input}
-          value={roles}
-          onChangeText={setRoles}
-          placeholder="役職(例: Vocal, Mix, Design)"
-          placeholderTextColor="#94a3b8"
-        />
-        <TextInput
-          style={styles.input}
-          value={achievements}
-          onChangeText={setAchievements}
-          placeholder="実績(カンマ区切り)"
+          placeholder="あなたのニックネーム"
           placeholderTextColor="#94a3b8"
         />
 
@@ -77,11 +93,62 @@ export default function ProfileScreen() {
           onPress={() => setPickerVisible(true)}
         >
           <Text style={{ color: kosenId ? '#1f2a44' : '#94a3b8' }}>
-            {kosenId ? getKosenById(kosenId)?.name : '高専を選択'}
+            {kosenId ? getKosenById(kosenId)?.name : '高専を選択してください'}
           </Text>
         </TouchableOpacity>
 
-        <Text style={[styles.text, { marginTop: 8, marginBottom: 4, fontWeight: '700' }]}>開発者設定（AI PM用）</Text>
+        <Text style={[styles.text, { marginTop: 16, marginBottom: 8, fontWeight: '700' }]}>スキル</Text>
+        <View style={{ marginBottom: 16 }}>
+          {AVAILABLE_SKILLS.map((skill) => {
+            const isSelected = skills.includes(skill);
+            return (
+              <TouchableOpacity
+                key={skill}
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}
+                onPress={() => toggleSkill(skill)}
+              >
+                <View style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 6,
+                  borderWidth: 2,
+                  borderColor: isSelected ? '#4f46e5' : '#94a3b8',
+                  backgroundColor: isSelected ? '#4f46e5' : '#ffffff',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: 12
+                }}>
+                  {isSelected && <Feather name="check" size={16} color="#fff" />}
+                </View>
+                <Text style={{ color: '#1f2a44', fontSize: 16, flexShrink: 1 }}>{skill}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={[styles.text, { marginBottom: 4 }]}>実績</Text>
+        <TextInput
+          style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+          value={achievements}
+          onChangeText={setAchievements}
+          placeholder="（例）インターン経験、開発コンテスト受賞歴、作成したアプリなど"
+          placeholderTextColor="#94a3b8"
+          multiline
+        />
+
+        <Text style={[styles.text, { marginBottom: 4 }]}>自由記述欄</Text>
+        <TextInput
+          style={[styles.input, { height: 120, textAlignVertical: 'top' }]}
+          value={bio}
+          onChangeText={setBio}
+          placeholder="自己紹介や興味のある分野、意気込みなどを自由に書いてください"
+          placeholderTextColor="#94a3b8"
+          multiline
+        />
+
+        <View style={{ height: 1, backgroundColor: '#d4def5', marginVertical: 24 }} />
+
+        <Text style={[styles.text, { marginBottom: 4, fontWeight: '700' }]}>開発者設定（AI PM用）</Text>
         <TextInput
           style={styles.input}
           value={geminiKey}
@@ -91,7 +158,7 @@ export default function ProfileScreen() {
           secureTextEntry={true}
         />
 
-        <TouchableOpacity style={[styles.button, { marginTop: 12 }]} onPress={onSave}>
+        <TouchableOpacity style={[styles.button, { marginTop: 24 }]} onPress={onSave}>
           <Text style={styles.buttonText}>保存</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={logOut}>
@@ -101,13 +168,13 @@ export default function ProfileScreen() {
 
       <Modal visible={pickerVisible} animationType="slide" transparent={true}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
-          <View style={{ backgroundColor: '#fff', borderRadius: 12, maxHeight: '80%', padding: 10 }}>
-            <Text style={[styles.title, { padding: 10, marginBottom: 0 }]}>高専を選択</Text>
+          <View style={{ backgroundColor: '#ffffff', borderRadius: 12, maxHeight: '80%', padding: 10, borderWidth: 1, borderColor: '#d4def5' }}>
+            <Text style={[styles.title, { padding: 10, marginBottom: 0, color: '#1f2a44' }]}>高専を選択</Text>
             <ScrollView style={{ padding: 10 }}>
               {KOSEN_LOCATIONS.map((loc) => (
                 <TouchableOpacity
                   key={loc.id}
-                  style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}
+                  style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#d4def5' }}
                   onPress={() => {
                     setKosenId(loc.id);
                     setPickerVisible(false);
@@ -120,7 +187,7 @@ export default function ProfileScreen() {
               ))}
             </ScrollView>
             <TouchableOpacity style={[styles.button, styles.buttonSecondary, { marginTop: 10 }]} onPress={() => setPickerVisible(false)}>
-              <Text style={[styles.buttonText, { color: '#f1f5f9' }]}>閉じる</Text>
+              <Text style={[styles.buttonText, { color: '#1f2a44' }]}>閉じる</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -61,7 +61,7 @@ export default function DashboardScreen({ setActiveSection, navigation }) {
                     <TouchableOpacity
                         key={project.id}
                         style={styles.section}
-                        onPress={() => navigation.navigate('ProjectDetail', { project })}
+                        onPress={() => navigation.navigate('Workspace', { projectId: project.id, projectTitle: project.title })}
                     >
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Text style={[styles.text, { fontWeight: '700', fontSize: 18, marginBottom: 4 }]}>{project.title}</Text>

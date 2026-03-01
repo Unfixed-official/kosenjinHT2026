@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { listProjects } from '../data/store';
+import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
 
 const ROLE_FILTER_OPTIONS = ['フロントエンド', 'バックエンド', 'デザイナー', 'その他'];
 const BASE_ROLES = ['フロントエンド', 'バックエンド', 'デザイナー'];
 
 export default function ProjectsScreen({ navigation }) {
+  const { user } = useAuth();
   const [keyword, setKeyword] = useState('');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,7 +79,13 @@ export default function ProjectsScreen({ navigation }) {
           <TouchableOpacity
             key={project.id}
             style={styles.section}
-            onPress={() => navigation.navigate('ProjectDetail', { project })}
+            onPress={() => {
+              if (project.memberIds && project.memberIds.includes(user?.uid)) {
+                navigation.navigate('Workspace', { projectId: project.id });
+              } else {
+                navigation.navigate('ProjectDetail', { project });
+              }
+            }}
           >
             <Text style={[styles.text, { fontWeight: '700', marginBottom: 4 }]}>{project.title}</Text>
             <Text style={styles.text}>{project.summary}</Text>

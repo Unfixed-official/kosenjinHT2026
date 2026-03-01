@@ -1,60 +1,26 @@
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, onSnapshot, query, where, orderBy, arrayUnion, limit, deleteDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { KOSEN_MAP } from './kosenLocations';
 import { generateAIResponse } from './ai';
 
-const state = {
-  users: {},
-  projects: [],
-  applications: {},
-  members: {},
-  channels: {},
-  messages: {}
-};
-
-const channelListeners = {};
-const messageListeners = {};
-
-function makeId(prefix) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function ensureProjectBuckets(projectId) {
-  if (!state.applications[projectId]) state.applications[projectId] = {};
-  if (!state.members[projectId]) state.members[projectId] = {};
-  if (!state.channels[projectId]) state.channels[projectId] = [];
-  if (!state.messages[projectId]) state.messages[projectId] = {};
-}
-
-function emitChannels(projectId) {
-  const key = projectId;
-  const listeners = channelListeners[key] || [];
-  const channels = [...(state.channels[projectId] || [])].sort((a, b) => a.position - b.position);
-  listeners.forEach((callback) => callback(channels));
-}
-
-function emitMessages(projectId, channelId) {
-  const key = `${projectId}:${channelId}`;
-  const listeners = messageListeners[key] || [];
-  const messages = [...(state.messages[projectId]?.[channelId] || [])];
-  listeners.forEach((callback) => callback(messages));
-}
-
 export async function upsertUserProfile(uid, data) {
-  state.users[uid] = {
-    ...(state.users[uid] || {}),
+  await setDoc(doc(db, 'users', uid), {
     ...data,
-    updatedAt: new Date().toISOString()
-  };
+    updatedAt: Date.now()
+  }, { merge: true });
 }
 
 export async function getUserProfile(uid) {
-  return state.users[uid] || null;
+  const snap = await getDoc(doc(db, 'users', uid));
+  return snap.exists() ? snap.data() : null;
 }
 
 export async function createProject(ownerId, payload) {
-  const projectId = makeId('project');
+  const projectRef = doc(collection(db, 'projects'));
   const kosen = payload.kosenId ? KOSEN_MAP[payload.kosenId] : null;
-  const project = {
-    id: projectId,
+
+  const projectInfo = {
+    id: projectRef.id,
     ownerId,
     title: payload.title,
     summary: payload.summary,
@@ -63,149 +29,156 @@ export async function createProject(ownerId, payload) {
     kosenName: kosen?.name || null,
     location: kosen ? { x: kosen.x, y: kosen.y } : payload.location || null,
     status: 'recruiting',
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    memberIds: [ownerId]
   };
 
-  state.projects.unshift(project);
-  ensureProjectBuckets(projectId);
+  await setDoc(projectRef, projectInfo);
 
-  state.members[projectId][ownerId] = {
-    uid: ownerId,
-    role: 'owner',
-    memberStatus: 'active',
-    shareBps: 3000,
-    joinedAt: Date.now()
-  };
-
-  const generalId = makeId('channel');
-  state.channels[projectId].push({
-    id: generalId,
+  // 初期のチャンネル(general)を作成
+  const channelRef = doc(collection(db, 'projects', projectRef.id, 'channels'));
+  await setDoc(channelRef, {
+    id: channelRef.id,
     name: 'general',
     type: 'text',
     isPrivate: false,
     position: 1
   });
-  state.messages[projectId][generalId] = [
-    {
-      id: makeId('msg'),
-      senderId: 'AI_PM',
-      text: 'プロジェクトが作成されました！本プロジェクトの進行は、私「AIプロジェクトマネージャー」がサポートします。\nメンバーが揃うまで、もう少しお待ち下さい。',
-      createdAt: Date.now()
-    }
-  ];
-  emitChannels(projectId);
 
-  return projectId;
+  // AI PMの初期メッセージ
+  const msgRef = doc(collection(db, 'projects', projectRef.id, 'channels', channelRef.id, 'messages'));
+  await setDoc(msgRef, {
+    id: msgRef.id,
+    senderId: 'AI_PM',
+    text: 'プロジェクトが作成されました！本プロジェクトの進行は、私「AIプロジェクトマネージャー」がサポートします。\nメンバーが揃うまで、もう少しお待ち下さい。',
+    createdAt: Date.now()
+  });
+
+  return projectRef.id;
+}
+
+export async function updateProject(projectId, updates) {
+  await updateDoc(doc(db, 'projects', projectId), updates);
+}
+
+export async function deleteProject(projectId) {
+  await deleteDoc(doc(db, 'projects', projectId));
 }
 
 export async function listProjects(keyword = '') {
-  const all = [...state.projects].sort((a, b) => b.createdAt - a.createdAt);
+  const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
+  const snap = await getDocs(q);
+  const all = snap.docs.map(d => d.data());
+
   if (!keyword.trim()) return all;
   const lower = keyword.toLowerCase();
   return all.filter((p) => p.title?.toLowerCase().includes(lower) || p.summary?.toLowerCase().includes(lower));
 }
 
 export async function applyToProject(projectId, uid, role, message) {
-  ensureProjectBuckets(projectId);
-  state.applications[projectId][uid] = {
+  const pSnap = await getDoc(doc(db, 'projects', projectId));
+  if (!pSnap.exists()) return;
+  const project = pSnap.data();
+
+  const appRef = doc(collection(db, 'applications'));
+  await setDoc(appRef, {
+    id: appRef.id,
+    projectId,
+    projectTitle: project.title,
+    ownerId: project.ownerId,
     applicantId: uid,
     applyRole: role,
     message,
     status: 'pending',
     createdAt: Date.now()
-  };
+  });
 }
 
 export async function acceptApplication(projectId, applicantId, reviewerId, role) {
-  ensureProjectBuckets(projectId);
-  const app = state.applications[projectId][applicantId];
-  if (!app) return;
+  const q = query(
+    collection(db, 'applications'),
+    where('projectId', '==', projectId),
+    where('applicantId', '==', applicantId),
+    where('status', '==', 'pending')
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return;
 
-  app.status = 'accepted';
-  app.reviewedBy = reviewerId;
-  app.reviewedAt = Date.now();
+  const appDoc = snap.docs[0];
+  await updateDoc(appDoc.ref, {
+    status: 'accepted',
+    reviewedBy: reviewerId,
+    reviewedAt: Date.now()
+  });
 
-  state.members[projectId][applicantId] = {
-    uid: applicantId,
-    role,
-    memberStatus: 'provisional',
-    shareBps: 1500,
-    joinedAt: Date.now()
-  };
+  // プロジェクトのメンバーとして追加
+  await updateDoc(doc(db, 'projects', projectId), {
+    memberIds: arrayUnion(applicantId)
+  });
 
-  const general = state.channels[projectId].find(c => c.name === 'general');
-  if (general) {
-    if (!state.messages[projectId][general.id]) state.messages[projectId][general.id] = [];
-    state.messages[projectId][general.id].push({
-      id: makeId('msg'),
+  // #general チャンネルにAIのお祝いメッセージを投稿
+  const chQ = query(collection(db, 'projects', projectId, 'channels'), where('name', '==', 'general'));
+  const chSnap = await getDocs(chQ);
+  if (!chSnap.empty) {
+    const channelId = chSnap.docs[0].id;
+    const msgRef = doc(collection(db, 'projects', projectId, 'channels', channelId, 'messages'));
+    await setDoc(msgRef, {
+      id: msgRef.id,
       senderId: 'AI_PM',
       text: `新しいメンバーがマッチングしました！🎉\n私「AIプロジェクトマネージャー」が進行を担当します。\nまずは皆さん、お互いに自己紹介と、得意なスキル・担当したいタスクについて話し合いましょう！`,
       createdAt: Date.now()
     });
-    emitMessages(projectId, general.id);
   }
 }
 
 export function subscribeChannels(projectId, callback) {
-  ensureProjectBuckets(projectId);
-  const key = projectId;
-  if (!channelListeners[key]) channelListeners[key] = [];
-  channelListeners[key].push(callback);
-  emitChannels(projectId);
-
-  return () => {
-    channelListeners[key] = (channelListeners[key] || []).filter((cb) => cb !== callback);
-  };
+  const q = query(collection(db, 'projects', projectId, 'channels'));
+  return onSnapshot(q, (snap) => {
+    const channels = snap.docs.map(d => d.data()).sort((a, b) => a.position - b.position);
+    callback(channels);
+  });
 }
 
 export function subscribeMessages(projectId, channelId, callback) {
-  ensureProjectBuckets(projectId);
-  if (!state.messages[projectId][channelId]) {
-    state.messages[projectId][channelId] = [];
-  }
-
-  const key = `${projectId}:${channelId}`;
-  if (!messageListeners[key]) messageListeners[key] = [];
-  messageListeners[key].push(callback);
-  emitMessages(projectId, channelId);
-
-  return () => {
-    messageListeners[key] = (messageListeners[key] || []).filter((cb) => cb !== callback);
-  };
+  const q = query(collection(db, 'projects', projectId, 'channels', channelId, 'messages'), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, (snap) => {
+    const messages = snap.docs.map(d => d.data());
+    callback(messages);
+  });
 }
 
 export async function sendMessage(projectId, channelId, uid, text) {
   if (!text.trim()) return;
-  ensureProjectBuckets(projectId);
-  if (!state.messages[projectId][channelId]) state.messages[projectId][channelId] = [];
-  state.messages[projectId][channelId].push({
-    id: makeId('msg'),
+
+  const msgRef = doc(collection(db, 'projects', projectId, 'channels', channelId, 'messages'));
+  await setDoc(msgRef, {
+    id: msgRef.id,
     senderId: uid,
     text: text.trim(),
     createdAt: Date.now()
   });
-  emitMessages(projectId, channelId);
 
-  // Invoke real AI PM if a user messages
   if (uid !== 'AI_PM') {
-    // Generate async so we don't block the UI
     (async () => {
       try {
-        const history = state.messages[projectId][channelId].slice(-10); // get last 10 messages for context
-        const project = state.projects.find(p => p.id === projectId);
-        if (!project) return;
+        const historyQ = query(collection(db, 'projects', projectId, 'channels', channelId, 'messages'), orderBy('createdAt', 'desc'), limit(10));
+        const historySnap = await getDocs(historyQ);
+        const history = historySnap.docs.map(d => d.data()).reverse();
 
-        // Pass the ownerId (who created the project and presumably set the API key) to get the AI response
+        const pSnap = await getDoc(doc(db, 'projects', projectId));
+        if (!pSnap.exists()) return;
+        const project = pSnap.data();
+
         const aiResponseText = await generateAIResponse(project.ownerId, history);
 
         if (aiResponseText) {
-          state.messages[projectId][channelId].push({
-            id: makeId('msg'),
+          const aiMsgRef = doc(collection(db, 'projects', projectId, 'channels', channelId, 'messages'));
+          await setDoc(aiMsgRef, {
+            id: aiMsgRef.id,
             senderId: 'AI_PM',
             text: aiResponseText,
             createdAt: Date.now()
           });
-          emitMessages(projectId, channelId);
         }
       } catch (err) {
         console.error('AI Integration Error:', err);
@@ -215,45 +188,19 @@ export async function sendMessage(projectId, channelId, uid, text) {
 }
 
 export async function listMyApplications(uid) {
-  const results = [];
-  for (const project of state.projects) {
-    const app = state.applications[project.id]?.[uid];
-    if (app) {
-      results.push({
-        projectId: project.id,
-        title: project.title,
-        ...app
-      });
-    }
-  }
-  return results;
+  const q = query(collection(db, 'applications'), where('applicantId', '==', uid));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data());
 }
 
 export async function listOwnedPendingApplications(ownerId) {
-  const pending = [];
-  for (const project of state.projects.filter((p) => p.ownerId === ownerId)) {
-    const apps = Object.entries(state.applications[project.id] || {});
-    for (const [applicantId, app] of apps) {
-      if (app.status === 'pending') {
-        pending.push({
-          projectId: project.id,
-          projectTitle: project.title,
-          applicantId,
-          ...app
-        });
-      }
-    }
-  }
-  return pending;
+  const q = query(collection(db, 'applications'), where('ownerId', '==', ownerId), where('status', '==', 'pending'));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data());
 }
 
 export async function listMyProjects(uid) {
-  const results = [];
-  for (const project of state.projects) {
-    const member = state.members[project.id]?.[uid];
-    if (member && (member.role === 'owner' || member.memberStatus === 'active' || member.memberStatus === 'provisional')) {
-      results.push(project);
-    }
-  }
-  return results;
+  const q = query(collection(db, 'projects'), where('memberIds', 'array-contains', uid));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data());
 }

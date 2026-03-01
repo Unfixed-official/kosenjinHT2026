@@ -31,11 +31,11 @@ export function QuintetLogoWide({ width = 200, height, color = "#f1f5f9" }) {
   );
 }
 
-export function QuintetLogoSquare({ size = 40 }) {
+export function QuintetLogoSquare({ size = 40, color = "#f1f5f9" }) {
   return (
     <Image
       source={require('../image/quintetkun.png')}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, tintColor: color }}
       resizeMode="contain"
     />
   );

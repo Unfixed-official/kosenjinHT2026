@@ -3,17 +3,25 @@ import { Alert, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } 
 import { createProject, getUserProfile } from '../data/store';
 import { useAuth } from '../state/AuthContext';
 import { styles } from '../ui/styles';
+import { Feather } from '@expo/vector-icons';
 
-const ROLE_OPTIONS = ['フロントエンド', 'バックエンド', 'デザイナー', 'その他'];
+export const ROLE_OPTIONS = [
+  "フロントエンド開発（Web / モバイル）",
+  "バックエンド開発（API / DB設計）",
+  "インフラ・クラウド構築",
+  "AI・機械学習",
+  "ハードウェア・IoT開発",
+  "UIデザイン",
+  "UX設計",
+  "3Dモデリング",
+  "動画制作・モーショングラフィック"
+];
 
 export default function CreateProjectScreen({ onProjectCreated }) {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [selectedRoles, setSelectedRoles] = useState([]);
-  const [otherRoleText, setOtherRoleText] = useState('');
-
-  const hasOther = selectedRoles.includes('その他');
 
   const toggleRole = (role) => {
     setSelectedRoles((current) => {
@@ -33,12 +41,6 @@ export default function CreateProjectScreen({ onProjectCreated }) {
       Alert.alert('入力不足', '募集ロールを1つ以上選択してください。');
       return false;
     }
-
-    if (hasOther && !otherRoleText.trim()) {
-      Alert.alert('入力不足', '「その他」を選択した場合は内容を入力してください。');
-      return false;
-    }
-
     return true;
   };
 
@@ -56,21 +58,16 @@ export default function CreateProjectScreen({ onProjectCreated }) {
         return;
       }
 
-      const normalizedRoles = selectedRoles
-        .filter((r) => r !== 'その他')
-        .concat(hasOther ? [otherRoleText.trim()] : []);
-
       const projectId = await createProject(user.uid, {
         title,
         summary,
-        requiredRoles: normalizedRoles,
+        requiredRoles: selectedRoles,
         kosenId: profile.kosenId
       });
 
       setTitle('');
       setSummary('');
       setSelectedRoles([]);
-      setOtherRoleText('');
 
       if (Platform.OS === 'web') {
         window.alert('プロジェクトを作成しました！');
@@ -98,46 +95,46 @@ export default function CreateProjectScreen({ onProjectCreated }) {
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder="タイトル"
+          placeholder="プロジェクト名"
           placeholderTextColor="#94a3b8"
         />
         <TextInput
-          style={styles.input}
+          style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
           value={summary}
           onChangeText={setSummary}
-          placeholder="概要"
+          placeholder="プロジェクトの概要"
           placeholderTextColor="#94a3b8"
+          multiline
         />
-        <Text style={[styles.text, { marginBottom: 8, fontWeight: '700' }]}>募集ロール（複数選択可）</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
+
+        <Text style={[styles.text, { marginTop: 12, marginBottom: 8, fontWeight: '700' }]}>募集ロール（複数選択可）</Text>
+        <View style={{ marginBottom: 16 }}>
           {ROLE_OPTIONS.map((role) => {
-            const active = selectedRoles.includes(role);
+            const isSelected = selectedRoles.includes(role);
             return (
               <TouchableOpacity
                 key={role}
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}
                 onPress={() => toggleRole(role)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: active ? '#6ea8fe' : '#232938',
-                    marginRight: 8,
-                    marginBottom: 8
-                  }
-                ]}
               >
-                <Text style={{ color: active ? '#0f1115' : '#f1f5f9', fontWeight: active ? '700' : '500' }}>{role}</Text>
+                <View style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 6,
+                  borderWidth: 2,
+                  borderColor: isSelected ? '#4f46e5' : '#94a3b8',
+                  backgroundColor: isSelected ? '#4f46e5' : '#ffffff',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: 12
+                }}>
+                  {isSelected && <Feather name="check" size={16} color="#fff" />}
+                </View>
+                <Text style={{ color: '#1f2a44', fontSize: 16, flexShrink: 1 }}>{role}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
-        <TextInput
-          style={[styles.input, { opacity: hasOther ? 1 : 0.5 }]}
-          value={otherRoleText}
-          onChangeText={setOtherRoleText}
-          editable={hasOther}
-          placeholder="その他の募集ロールを入力"
-          placeholderTextColor="#94a3b8"
-        />
 
         <TouchableOpacity style={styles.button} onPress={onCreate}>
           <Text style={styles.buttonText}>作成</Text>

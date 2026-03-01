@@ -65,7 +65,7 @@ export default function MainShellScreen({ navigation }) {
       case 'Dashboard':
         return <DashboardScreen setActiveSection={setActiveSection} navigation={navigation} />;
       case 'Create':
-        return <CreateProjectScreen onProjectCreated={() => setActiveSection('Projects')} />;
+        return <CreateProjectScreen onProjectCreated={() => setActiveSection('Dashboard')} />;
       case 'Applications':
         return <ApplicationsScreen />;
       case 'Profile':
@@ -121,7 +121,7 @@ export default function MainShellScreen({ navigation }) {
             }}
           >
             <View style={{ height: 42, marginBottom: 16, alignItems: 'center', justifyContent: 'center' }}>
-              <QuintetLogoSquare size={32} color="#7dd3fc" />
+              <QuintetLogoSquare size={32} color="#f1f5f9" />
             </View>
             {sections.map((section) => {
               const active = activeSection === section.key;
